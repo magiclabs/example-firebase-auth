@@ -1,0 +1,4 @@
+node_modules/
+
+# Service account credential
+credential/
