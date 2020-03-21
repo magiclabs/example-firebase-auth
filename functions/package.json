@@ -13,7 +13,7 @@
     "node": "8"
   },
   "dependencies": {
-    "@magic-sdk/admin": "0.1.0-beta.5",
+    "@magic-sdk/admin": "0.1.0-beta.7",
     "firebase-admin": "^8.6.0",
     "firebase-functions": "^3.3.0"
   },

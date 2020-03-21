@@ -37,20 +37,33 @@ const handleNewUser = async email => {
 };
 
 exports.auth = functions.https.onCall(async (data, context) => {
-  const { Magic } = require("@magic-sdk/admin");
+  const { Magic, SDKError } = require("@magic-sdk/admin");
   const magic = new Magic();
   const didToken = data.didToken;
   const email = data.email;
-  const claim = magic.token.decode(didToken)[1];
   try {
-    /* Get existing user by email address,
-       compatible with legacy Firebase email users */
-    let user = (await admin.auth().getUserByEmail(email)).toJSON();
-    return await handleExistingUser(user, claim);
+    /* Make sure email matches attachment in the DID token */
+    magic.token.validate(didToken, email);
+    try {
+      /* Get existing user by email address,
+         compatible with legacy Firebase email users */
+      let user = (await admin.auth().getUserByEmail(email)).toJSON();
+      const claim = magic.token.decode(didToken)[1];
+      return await handleExistingUser(user, claim);
+    } catch (err) {
+      if (err.code === "auth/user-not-found") {
+        /* Create new user */
+        return await handleNewUser(email);
+      } else {
+        throw err;
+      }
+    }
   } catch (err) {
-    if (err.code === "auth/user-not-found") {
-      /* Create new user */
-      return await handleNewUser(email);
+    if (err instanceof SDKError) {
+      throw new functions.https.HttpsError(
+        "invalid-argument",
+        "This DID token is invalid."
+      );
     } else {
       throw err;
     }
