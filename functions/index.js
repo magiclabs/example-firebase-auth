@@ -1,3 +1,5 @@
+require('dotenv').config();
+
 const functions = require("firebase-functions");
 const admin = require("firebase-admin");
 const serviceAccount = require("./credential/fir-demo-integration-firebase-adminsdk-1xfzn-f035cbbdf0.json");
@@ -37,33 +39,21 @@ const handleNewUser = async email => {
 };
 
 exports.auth = functions.https.onCall(async (data, context) => {
-  const { Magic, SDKError } = require("@magic-sdk/admin");
-  const magic = new Magic();
+  const { Magic } = require("@magic-sdk/admin");
+  const magic = new Magic(process.env.MAGIC_SECRET_API_KEY);
   const didToken = data.didToken;
-  const email = data.email;
+  const metadata = await magic.users.getMetadataByToken(didToken);
+  const email = metadata.email;
   try {
-    /* Make sure email matches attachment in the DID token */
-    magic.token.validate(didToken, email);
-    try {
-      /* Get existing user by email address,
-         compatible with legacy Firebase email users */
-      let user = (await admin.auth().getUserByEmail(email)).toJSON();
-      const claim = magic.token.decode(didToken)[1];
-      return await handleExistingUser(user, claim);
-    } catch (err) {
-      if (err.code === "auth/user-not-found") {
-        /* Create new user */
-        return await handleNewUser(email);
-      } else {
-        throw err;
-      }
-    }
+    /* Get existing user by email address,
+       compatible with legacy Firebase email users */
+    let user = (await admin.auth().getUserByEmail(email)).toJSON();
+    const claim = magic.token.decode(didToken)[1];
+    return await handleExistingUser(user, claim);
   } catch (err) {
-    if (err instanceof SDKError) {
-      throw new functions.https.HttpsError(
-        "invalid-argument",
-        "This DID token is invalid."
-      );
+    if (err.code === "auth/user-not-found") {
+      /* Create new user */
+      return await handleNewUser(email);
     } else {
       throw err;
     }
