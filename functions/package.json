@@ -15,7 +15,7 @@
   "dependencies": {
     "@magic-sdk/admin": "1.0.0",
     "dotenv": "^8.2.0",
-    "firebase-admin": "^8.6.0",
+    "firebase-admin": "^9.2.0",
     "firebase-functions": "^3.3.0"
   },
   "devDependencies": {
